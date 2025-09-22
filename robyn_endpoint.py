@@ -1,15 +1,15 @@
+from robyn import Robyn
 import time
 import uuid
 import orjson
-from starlette.applications import Starlette
-from starlette.responses import JSONResponse
-from starlette.requests import Request
-from starlette.routing import Route
-import uvicorn
+from starlette.responses import Response
 
-async def chat_completions(request: Request):
+app = Robyn(__file__)
+
+@app.post("/chat/completions")
+async def chat_completions(request):
     start_time = time.time()
-    body = orjson.loads(await request.body())
+    body = orjson.loads(request.body)
     messages = body.get("messages", [])
     user = body.get("user", "anonymous")
     end_time = time.time()
@@ -42,20 +42,7 @@ async def chat_completions(request: Request):
         "content-type": "application/json"
     }
 
-    return JSONResponse(content=response_data, headers=headers)
+    return Response(content=orjson.dumps(response_data), headers=headers, media_type="application/json")
 
-routes = [
-    Route("/chat/completions", chat_completions, methods=["POST"]),
-]
 
-app = Starlette(debug=False, routes=routes)
-
-if __name__ == "__main__":
-    uvicorn.run(
-        "simple_endpoint:app",
-        host="0.0.0.0",
-        port=8000,
-        workers=1,       # high parallelism
-        loop="uvloop",    # fast C-based event loop
-        http="httptools"  # fast HTTP parser
-    )
+app.start(port=8000)

@@ -1,4 +1,3 @@
-import os
 import uuid
 from locust import HttpUser, task, between, events
 

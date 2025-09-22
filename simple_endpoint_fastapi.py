@@ -1,12 +1,13 @@
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+import uvicorn
 import time
 import uuid
 import orjson
-from starlette.applications import Starlette
-from starlette.responses import JSONResponse
-from starlette.requests import Request
-from starlette.routing import Route
-import uvicorn
 
+app = FastAPI()
+
+@app.post("/chat/completions")
 async def chat_completions(request: Request):
     start_time = time.time()
     body = orjson.loads(await request.body())
@@ -44,18 +45,13 @@ async def chat_completions(request: Request):
 
     return JSONResponse(content=response_data, headers=headers)
 
-routes = [
-    Route("/chat/completions", chat_completions, methods=["POST"]),
-]
-
-app = Starlette(debug=False, routes=routes)
 
 if __name__ == "__main__":
     uvicorn.run(
         "simple_endpoint:app",
         host="0.0.0.0",
         port=8000,
-        workers=1,       # high parallelism
-        loop="uvloop",    # fast C-based event loop
-        http="httptools"  # fast HTTP parser
+        workers=17,              # high number of workers for parallelism
+        loop="uvloop",           # fast C-based event loop
+        http="httptools",        # fast HTTP parser
     )
