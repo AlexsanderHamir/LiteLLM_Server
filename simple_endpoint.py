@@ -7,6 +7,7 @@ from starlette.requests import Request
 from starlette.routing import Route
 import uvicorn
 
+
 async def chat_completions(request: Request):
     start_time = time.time()
     body = orjson.loads(await request.body())
@@ -25,24 +26,28 @@ async def chat_completions(request: Request):
                 "index": 0,
                 "message": {
                     "role": "assistant",
-                    "content": f"Mock response for user {user} with {len(messages)} messages"
+                    "content": (
+                        f"Mock response for user {user} "
+                        f"with {len(messages)} messages"
+                    ),
                 },
-                "finish_reason": "stop"
+                "finish_reason": "stop",
             }
         ],
         "usage": {
             "prompt_tokens": 100,
             "completion_tokens": 50,
-            "total_tokens": 150
-        }
+            "total_tokens": 150,
+        },
     }
 
     headers = {
         "x-litellm-overhead-duration-ms": str(overhead_duration_ms),
-        "content-type": "application/json"
+        "content-type": "application/json",
     }
 
     return JSONResponse(content=response_data, headers=headers)
+
 
 routes = [
     Route("/chat/completions", chat_completions, methods=["POST"]),
@@ -50,12 +55,13 @@ routes = [
 
 app = Starlette(debug=False, routes=routes)
 
+
 if __name__ == "__main__":
-    uvicorn.run(
+      uvicorn.run(
         "simple_endpoint:app",
         host="0.0.0.0",
         port=8000,
-        workers=1,       # high parallelism
-        loop="uvloop",    # fast C-based event loop
-        http="httptools"  # fast HTTP parser
+        workers=8,              # high number of workers for parallelism
+        loop="uvloop",           # fast C-based event loop
+        http="httptools",        # fast HTTP parser
     )

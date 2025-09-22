@@ -5,9 +5,7 @@ from starlette.applications import Starlette
 from starlette.responses import JSONResponse
 from starlette.requests import Request
 from starlette.routing import Route
-import asyncio
-from hypercorn.config import Config
-from hypercorn.asyncio import serve
+
 
 async def chat_completions(request: Request):
     start_time = time.time()
@@ -27,24 +25,28 @@ async def chat_completions(request: Request):
                 "index": 0,
                 "message": {
                     "role": "assistant",
-                    "content": f"Mock response for user {user} with {len(messages)} messages"
+                    "content": (
+                        f"Mock response for user {user} "
+                        f"with {len(messages)} messages"
+                    ),
                 },
-                "finish_reason": "stop"
+                "finish_reason": "stop",
             }
         ],
         "usage": {
             "prompt_tokens": 100,
             "completion_tokens": 50,
-            "total_tokens": 150
-        }
+            "total_tokens": 150,
+        },
     }
 
     headers = {
         "x-litellm-overhead-duration-ms": str(overhead_duration_ms),
-        "content-type": "application/json"
+        "content-type": "application/json",
     }
 
     return JSONResponse(content=response_data, headers=headers)
+
 
 routes = [
     Route("/chat/completions", chat_completions, methods=["POST"]),
@@ -52,13 +54,6 @@ routes = [
 
 app = Starlette(debug=False, routes=routes)
 
-if __name__ == "__main__":
-    config = Config()
-    config.bind = ["0.0.0.0:8000"]
-    config.workers = 17               # high parallelism
-    config.loop = "uvloop"            # fast C-based event loop
-    config.worker_class = "uvloop"    # Hypercorn supports uvloop for async speed
-    config.keep_alive_timeout = 1     # minimal keep-alive for HFT-like workloads
-    config.backlog = 2048             # socket backlog for bursts
-
-    asyncio.run(serve(app, config))
+# 🚀 Run with Granian (not uvicorn)
+#   pip install granian
+#   granian --interface asgi --workers 8 granian_test:app --host 0.0.0.0 --port 8000
